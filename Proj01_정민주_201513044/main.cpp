@@ -1,25 +1,74 @@
-/*
-1. 부모 process에서 읽기용, 쓰기용 anonymous pipe를 각각 생성한다.
-	(이때 생성되는 handle은 상속 가능하도록 생성되어야 한다.)
-2. 자식 process를 생성하고, 읽기용 쓰기용 pipe 핸들을 자식 프로세스에 각각 전달한다.
-3. 생성된 자식 프로세스와 부모 프로세스간 키보드 입력을 두개의 pipe를 통해 주고 받아 화면에 표시하도록 한다.
-4. 입력된 글자가 exit 일때 두 프로세스를 종료 한다.
-*/
-
-#include <Windows.h>
-#include <tchar.h>
 #include <stdio.h>
+#include <tchar.h>
+#include <windows.h>
 
-void _tmain(int argc, TCHAR* argv[]) {
 
-	STARTUPINFO startInfo = { 0, };
-	PROCESS_INFORMATION processInfo;
+#define DIR_LEN MAX_PATH+1
 
-	startInfo.cb = sizeof(startInfo);
-	startInfo.dwFlags = STARTF_USEPOSITION | STARTF_USESIZE;
-	startInfo.dwX = 100;
-	startInfo.dwY = 200;
-	startInfo.dwXSize = 500;
-	startInfo.dwYSize = 600;
-	startInfo.lpTitle = (LPWSTR)_T("Process Child");
+int _tmain(int argc, TCHAR * argv[])
+{
+	STARTUPINFO si = { 0, };
+	PROCESS_INFORMATION pi;
+
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USEPOSITION | STARTF_USESIZE;
+	si.dwX = 100;
+	si.dwY = 200;
+	si.dwXSize = 300;
+	si.dwYSize = 200;
+	si.lpTitle = (LPTSTR)_T("child");
+
+	HANDLE hReadPipe, hWritePipe; //pipe handle
+
+	TCHAR sendString[] = _T("anonymous pipe");
+	TCHAR recvString[100];
+
+	DWORD bytesWritten;
+	DWORD bytesRead;
+
+	TCHAR command[] = _T("ChildProcess.exe 10 20");
+	TCHAR cDir[DIR_LEN];
+	BOOL state;
+
+	GetCurrentDirectory(DIR_LEN, cDir);	//현재 디렉토리 확인.
+	_fputts(cDir, stdout);
+	_fputts(_T("\n"), stdout);
+
+	SetCurrentDirectory(_T("C:\\WinSystem"));
+
+	GetCurrentDirectory(DIR_LEN, cDir);	//현재 디렉토리 확인.
+	_fputts(cDir, stdout);
+	_fputts(_T("\n"), stdout);
+
+
+	state = CreateProcess(NULL,     // 프로세스 생성.
+		command,
+		NULL,
+		NULL,
+		TRUE,
+		CREATE_NEW_CONSOLE,
+		NULL,
+		NULL,
+		&si,
+		&pi
+	);  //CreateProcess
+
+	CreatePipe(&hReadPipe, &hWritePipe, NULL, 0);
+	WriteFile(hWritePipe, sendString, lstrlen(sendString) * sizeof(TCHAR), &bytesWritten, NULL);
+	_tprintf(_T("string send: %s \n"), sendString);
+
+
+	/* pipe의 다른 한쪽 끝을 이용한 데이터 수신 */
+	ReadFile(hReadPipe, recvString, bytesWritten, &bytesRead, NULL);
+	recvString[bytesRead / sizeof(TCHAR)] = 0;
+	_tprintf(_T("string recv: %s \n"), recvString);
+	if (state != 0)
+		_fputts(_T("Create OK! \n"), stdout);
+	else
+		_fputts(_T("Create Error! \n"), stdout);
+	CloseHandle(hReadPipe);
+	CloseHandle(hWritePipe);
+	return 0;
 }
+
+
