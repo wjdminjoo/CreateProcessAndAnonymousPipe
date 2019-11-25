@@ -1,79 +1,69 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <tchar.h>
-#include <windows.h>
+#include <Windows.h>
 
-
-#define DIR_LEN MAX_PATH+1
+#define BUF_SIZE 512
 
 int _tmain(int argc, TCHAR * argv[])
 {
 	STARTUPINFO si = { 0, };
 	PROCESS_INFORMATION pi;
+	TCHAR command[] = _T("child.exe");
 
-	si.cb = sizeof(si);
-	si.dwFlags = STARTF_USEPOSITION | STARTF_USESIZE;
-	si.dwX = 100;
-	si.dwY = 200;
-	si.dwXSize = 300;
-	si.dwYSize = 200;
-	si.lpTitle = (LPTSTR)_T("child");
+	HANDLE hReadPipe, hWritePipe;
+	HANDLE hReadPipe2, hWritePipe2;
 
-	HANDLE hReadPipe, hWritePipe; //pipe handle
+	TCHAR sendStr[BUF_SIZE];
+	TCHAR recvStr[BUF_SIZE + 1];
 
-	TCHAR sendString[] = _T("anonymous pipe");
-	TCHAR recvString[100];
-
-	DWORD bytesWritten;
-	DWORD bytesRead;
-
-	TCHAR command[] = _T("ChildProcess.exe 10 20");
-	TCHAR cDir[DIR_LEN];
-	BOOL state;
+	DWORD bytes;
 
 	SECURITY_ATTRIBUTES sa;
-	sa.nLength = sizeof(si);
-	sa.lpSecurityDescriptor = NULL;
+	sa.nLength = sizeof(sa);
 	sa.bInheritHandle = TRUE;
+	sa.lpSecurityDescriptor = NULL;
 
-	GetCurrentDirectory(DIR_LEN, cDir);	//현재 디렉토리 확인.
-	_fputts(cDir, stdout);
-	_fputts(_T("\n"), stdout);
+	CreatePipe(&hReadPipe, &hWritePipe, &sa, 0);
+	CreatePipe(&hReadPipe2, &hWritePipe2, &sa, 0);
 
-	SetCurrentDirectory(_T("C:\\WinSystem"));
+	FILE* file = _tfopen(_T("HandleTable.txt"), _T("w"));
+	_ftprintf(file, _T("%p %p"), hWritePipe, hReadPipe2);
+	fclose(file);
+	
 
-	GetCurrentDirectory(DIR_LEN, cDir);	//현재 디렉토리 확인.
-	_fputts(cDir, stdout);
-	_fputts(_T("\n"), stdout);
+	si.cb = sizeof(si);
 
+	CreateProcess(NULL, command, NULL, NULL, TRUE,
+		CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
 
-	state = CreateProcess(NULL,     // 프로세스 생성.
-		command,
-		NULL,
-		NULL,
-		TRUE,
-		CREATE_NEW_CONSOLE,
-		NULL,
-		NULL,
-		&si,
-		&pi
-	);  //CreateProcess
+	CloseHandle(pi.hThread);
 
-	CreatePipe(&hReadPipe, &hWritePipe, NULL, 0);
-	WriteFile(hWritePipe, sendString, lstrlen(sendString) * sizeof(TCHAR), &bytesWritten, NULL);
-	_tprintf(_T("string send: %s \n"), sendString);
+	while (1)
+	{
+		_tprintf(_T("Read: "));
+		ReadFile(hReadPipe, recvStr, BUF_SIZE, &bytes, NULL);
+		recvStr[bytes / sizeof(TCHAR)] = 0;
+		_tprintf(_T("%s\n"), recvStr);
 
+		if (_tcscmp(recvStr, _T("exit")) == 0)
+			break;
 
-	/* pipe의 다른 한쪽 끝을 이용한 데이터 수신 */
-	//ReadFile(hReadPipe, recvString, bytesWritten, &bytesRead, NULL);
-	//recvString[bytesRead / sizeof(TCHAR)] = 0;
-	//_tprintf(_T("string recv: %s \n"), recvString);
-	if (state != 0)
-		_fputts(_T("Create OK! \n"), stdout);
-	else
-		_fputts(_T("Create Error! \n"), stdout);
+		_tprintf(_T("Send: "));
+		_fgetts(sendStr, sizeof(sendStr) / sizeof(TCHAR), stdin);
+		if (lstrlen(sendStr) > 0)
+			sendStr[lstrlen(sendStr) / sizeof(TCHAR) - 1] = 0;
+
+		WriteFile(hWritePipe2, sendStr, lstrlen(sendStr) * sizeof(TCHAR), &bytes, NULL);
+
+		if (_tcscmp(sendStr, _T("exit")) == 0)
+			break;
+	}
+
 	CloseHandle(hReadPipe);
+	CloseHandle(hReadPipe2);
 	CloseHandle(hWritePipe);
+	CloseHandle(hWritePipe2);
+	CloseHandle(pi.hProcess);
 	return 0;
 }
-
-

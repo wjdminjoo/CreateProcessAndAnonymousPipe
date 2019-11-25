@@ -1,30 +1,45 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <tchar.h>
-#include <windows.h>
+#include <Windows.h>
 
+#define BUF_SIZE 512
 
-int _tmain(int argc, TCHAR* argv[])
+int _tmain(int argc, TCHAR * argv[])
 {
-	HANDLE hReadPipe, hWritePipe;
-	DWORD val1, val2;
-	val1 = _ttoi(argv[1]);
-	val2 = _ttoi(argv[2]);
-	TCHAR sendString[] = _T("anonymous pipe");
-	TCHAR recvString[100];
-	DWORD bytesWritten;
-	DWORD bytesRead;
+	HANDLE hWritePipe;
+	HANDLE hReadPipe;
 
-	_tprintf(_T("%d + %d = %d \n"), val1, val2, val1 + val2);
-	CreatePipe(&hReadPipe, &hWritePipe, NULL, 0);
-	WriteFile(hWritePipe, sendString, lstrlen(sendString) * sizeof(TCHAR), &bytesWritten, NULL);
-	_tprintf(_T("string send: %s \n"), sendString);
+	TCHAR sendStr[BUF_SIZE];
+	TCHAR recvStr[BUF_SIZE + 1];
+	DWORD bytes;
+
+	FILE* file = _tfopen(_T("HandleTable.txt"), _T("r"));
+	_ftscanf(file, _T("%p %p"), &hWritePipe, &hReadPipe);
+	fclose(file);
 
 
-	/* pipe의 다른 한쪽 끝을 이용한 데이터 수신 */
-	ReadFile(hReadPipe, recvString, bytesWritten, &bytesRead, NULL);
-	recvString[bytesRead / sizeof(TCHAR)] = 0;
-	_tprintf(_T("string recv: %s \n"), recvString);
-	_gettchar(); //프로그램의 실행을 잠시 멈추기 위해. 
+	while (1)
+	{
+		_tprintf(_T("Send: "));
+		_fgetts(sendStr, sizeof(sendStr) / sizeof(TCHAR), stdin);
+		if (lstrlen(sendStr) > 0)
+			sendStr[lstrlen(sendStr) / sizeof(TCHAR) - 1] = 0;
+
+		WriteFile(hWritePipe, sendStr, lstrlen(sendStr) * sizeof(TCHAR), &bytes, NULL);
+
+		if (_tcscmp(sendStr, _T("exit")) == 0)
+			break;
+
+		_tprintf(_T("Read: "));
+		ReadFile(hReadPipe, recvStr, BUF_SIZE, &bytes, NULL);
+		recvStr[bytes / sizeof(TCHAR)] = 0;
+		_tprintf(_T("%s\n"), recvStr);
+
+		if (_tcscmp(recvStr, _T("exit")) == 0)
+			break;
+	}
+
+	CloseHandle(hWritePipe);
 	return 0;
 }
-

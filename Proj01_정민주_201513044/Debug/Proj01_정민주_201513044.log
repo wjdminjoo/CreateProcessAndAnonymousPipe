@@ -1,3 +1,2 @@
-﻿  child.cpp
-  C:\Users\wjdminjoo\source\repos\Proj01_정민주_201513044\child.cpp(24) : error C4700: 초기화되지 않은 'bytesWritten' 지역 변수를 사용했습니다.
-C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(429,5): error MSB6006: "CL.exe"이(가) 종료되었습니다(코드: 2).
+﻿  main.cpp
+  Proj01_정민주_201513044.vcxproj -> C:\Users\wjdminjoo\source\repos\Proj01_정민주_201513044\Debug\Proj01_정민주_201513044.exe
