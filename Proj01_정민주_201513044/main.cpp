@@ -30,6 +30,11 @@ int _tmain(int argc, TCHAR * argv[])
 	TCHAR cDir[DIR_LEN];
 	BOOL state;
 
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength = sizeof(si);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
+
 	GetCurrentDirectory(DIR_LEN, cDir);	//현재 디렉토리 확인.
 	_fputts(cDir, stdout);
 	_fputts(_T("\n"), stdout);
@@ -59,9 +64,9 @@ int _tmain(int argc, TCHAR * argv[])
 
 
 	/* pipe의 다른 한쪽 끝을 이용한 데이터 수신 */
-	ReadFile(hReadPipe, recvString, bytesWritten, &bytesRead, NULL);
-	recvString[bytesRead / sizeof(TCHAR)] = 0;
-	_tprintf(_T("string recv: %s \n"), recvString);
+	//ReadFile(hReadPipe, recvString, bytesWritten, &bytesRead, NULL);
+	//recvString[bytesRead / sizeof(TCHAR)] = 0;
+	//_tprintf(_T("string recv: %s \n"), recvString);
 	if (state != 0)
 		_fputts(_T("Create OK! \n"), stdout);
 	else
