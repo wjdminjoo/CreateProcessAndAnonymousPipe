@@ -50,9 +50,9 @@ int _tmain(int argc, TCHAR * argv[])
 			break;
 
 		_tprintf(_T("Send: "));
-		_fgetts(sendStr, sizeof(sendStr) / sizeof(TCHAR), stdin);
+		_fgetts(sendStr, sizeof(sendStr) * sizeof(TCHAR), stdin);
 		if (lstrlen(sendStr) > 0)
-			sendStr[lstrlen(sendStr) / sizeof(TCHAR) - 1] = 0;
+			sendStr[lstrlen(sendStr)-1] = 0;
 
 		WriteFile(hWritePipe2, sendStr, lstrlen(sendStr) * sizeof(TCHAR), &bytes, NULL);
 
